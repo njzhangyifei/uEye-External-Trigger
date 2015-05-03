@@ -62,13 +62,13 @@ void setup(void){
  *
  */
 byte serialInput[4];
+uint8_t triggerRate = 20;
 void loop(){
   if (Serial.available()>=4){
     for (int i = 0; i < 4; i++){
       serialInput[i] = Serial.read();
     }
     if (isValidPack(serialInput, sizeof(serialInput))){
-      uint8_t triggerRate = 0;
       // valid input
       triggerRate = serialInput[VALUE];
       updateTriggerRate(triggerRate);
@@ -78,10 +78,13 @@ void loop(){
       digitalWrite(TRIGGER_PIN_P, LOW);
       digitalWrite(TRIGGER_PIN_N, LOW);
       Serial.println("RESET");
-      delay(1);
+      Serial.flush();
       slapTheWatchdog();
     }
   }
+  Serial.print(triggerRate);
+  Serial.println(" hz");
+  Serial.flush();
   delay(100);
 }
 
