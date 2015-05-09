@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+
+"""
+File: ueye_external_trigger.py
+Author: Yifei Zhang
+Email: njzhangyifei@gmail.com
+Github: https://github.com/njzhangyifei
+Description: the ROS node handles uEye external trigger
+"""
+
+import rospy
+import serial
+from time import sleep
+import Queue
+from std_msgs.msg import Float64
+from serial_port_controller.SerialPortController import SerialPortController
+"""
+@type SERIAL_PORT: SerialPortListener
+"""
+SERIAL_PORT = None
+FRAME_RATE = 0
+
+def frame_rate_callback(data):
+    """TODO: Docstring for frame_rate_callback.
+    @type data : std_msgs.msg
+    :data : the standard message from /frame_rate
+    """
+    global FRAME_RATE
+    frame_rate = int(data.data)
+    if frame_rate != FRAME_RATE:
+        FRAME_RATE = frame_rate
+        SERIAL_PORT.set_frame_rate(frame_rate)
+        rospy.loginfo("Frame rate changed to %d", frame_rate)
+    else:
+        rospy.logdebug("Frame rate %d, not changed", FRAME_RATE)
+
+def start_trigger_control():
+    """start the node
+
+    :returns: none
+    """
+    global SERIAL_PORT
+    global FRAME_RATE
+
+    pub = rospy.Publisher('frame_rate', Float64, queue_size=10)
+    rospy.Subscriber("frame_rate", Float64, frame_rate_callback)
+
+    rospy.init_node('ueye_external_trigger', \
+            anonymous=True, log_level = rospy.DEBUG)
+
+    port_name = rospy.get_param("~port_name")
+    frame_rate = rospy.get_param("~frame_rate")
+
+    data_q = Queue.Queue()
+    error_q = Queue.Queue()
+
+    SERIAL_PORT = SerialPortController(data_q, error_q, \
+            port_name, 115200)
+    SERIAL_PORT.start()
+
+    rospy.loginfo("uEye External Trigger Node up and running")
+
+    FRAME_RATE = int(frame_rate)
+    SERIAL_PORT.set_frame_rate(FRAME_RATE)
+    SERIAL_PORT.set_frame_rate(FRAME_RATE)
+
+    rostimer = rospy.Rate(25)
+    while not rospy.is_shutdown():
+        if data_q.not_empty:
+            try:
+                incoming_string = data_q.get_nowait()
+                rospy.logdebug("%s", incoming_string)
+                FRAME_RATE = int(incoming_string.split()[0])
+                pub.publish(FRAME_RATE)
+            except Queue.Empty:
+                pass
+        rostimer.sleep()
+    rospy.logdebug("SHUTTING DOWN NOW!!!")
+    SERIAL_PORT.join()
+
+if __name__ == '__main__':
+    start_trigger_control()
