@@ -10,20 +10,22 @@ Description: the ROS node handles uEye external trigger
 
 import rospy
 import serial
-from time import sleep
 import Queue
 from std_msgs.msg import Float64
 from serial_port_controller.SerialPortController import SerialPortController
+
 """
 @type SERIAL_PORT: SerialPortListener
+@type FRAME_RATE: int
 """
 SERIAL_PORT = None
 FRAME_RATE = 0
 
 def frame_rate_callback(data):
-    """TODO: Docstring for frame_rate_callback.
+    """Callback for /frame_rate topic
     @type data : std_msgs.msg
     :data : the standard message from /frame_rate
+    :return : none
     """
     global FRAME_RATE
     frame_rate = int(data.data)
@@ -35,8 +37,7 @@ def frame_rate_callback(data):
         rospy.logdebug("Frame rate %d, not changed", FRAME_RATE)
 
 def start_trigger_control():
-    """start the node
-
+    """Method to start the node
     :returns: none
     """
     global SERIAL_PORT
@@ -46,10 +47,15 @@ def start_trigger_control():
     rospy.Subscriber("frame_rate", Float64, frame_rate_callback)
 
     rospy.init_node('ueye_external_trigger', \
-            anonymous=True, log_level = rospy.DEBUG)
+            anonymous=True, log_level=rospy.DEBUG)
 
-    port_name = rospy.get_param("~port_name")
-    frame_rate = rospy.get_param("~frame_rate")
+    port_name = None
+    frame_rate = None
+    if rospy.has_param("~port_name") and rospy.has_param("~frame_rate"):
+        port_name = rospy.get_param("~port_name")
+        frame_rate = rospy.get_param("~frame_rate")
+    else:
+        rospy.signal_shutdown("Params Port Name and Initial Frame Rate are required")
 
     data_q = Queue.Queue()
     error_q = Queue.Queue()
