@@ -42,7 +42,7 @@ void setup(void){
     ;  //wait until the serial port is started
     //Leonardo specific code
   }
-  Serial.println("TRIGGER CONTROLLER STARTED");
+  //Serial.println("TRIGGER CONTROLLER STARTED");
 }
 
 /*
@@ -77,7 +77,7 @@ void loop(){
       Timer1.stop();
       digitalWrite(TRIGGER_PIN_P, LOW);
       digitalWrite(TRIGGER_PIN_N, LOW);
-      Serial.println("RESET");
+      //Serial.println("RESET");
       Serial.flush();
       slapTheWatchdog();
     }
